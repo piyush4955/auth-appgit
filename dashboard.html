@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Dashboard</title>
+  <!-- Firebase v8 (works with your current code) -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+</head>
+<body>
+  <h1 id="welcome">Welcome!</h1>
+  <button id="logoutBtn">Log Out</button>
+
+  <script src="firebase-config.js"></script>
+  <script>
+    // Wait for the DOM to load
+    document.addEventListener("DOMContentLoaded", function () {
+      const auth = firebase.auth();
+      const db = firebase.database();
+
+      // Check user login state
+      auth.onAuthStateChanged(function (user) {
+        if (user) {
+          const uid = user.uid;
+          db.ref("users/" + uid + "/name").once("value").then(function (snapshot) {
+            document.getElementById("welcome").innerText = "Welcome, " + snapshot.val() + "!";
+          });
+        } else {
+          // Redirect if not logged in
+          window.location.href = "index.html";
+        }
+      });
+
+      // Log out button event
+      document.getElementById("logoutBtn").addEventListener("click", function () {
+        auth.signOut().then(function () {
+          window.location.href = "index.html";
+        }).catch(function (error) {
+          alert("Logout error: " + error.message);
+        });
+      });
+    });
+  </script>
+</body>
+</html>
