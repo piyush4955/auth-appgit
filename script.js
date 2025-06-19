@@ -1,6 +1,27 @@
+// Initialize Firebase Auth & DB
 const auth = firebase.auth();
 const db = firebase.database();
+const messaging = firebase.messaging();
 
+// 🔔 Ask for notification permission & get token
+function requestNotificationPermission() {
+  Notification.requestPermission().then((permission) => {
+    if (permission === 'granted') {
+      messaging.getToken({
+        vapidKey: "BNYr4nNZXE8wq-uOVpfxx-St67w5vCaJH1fJga8kCe2Isnu152_7IRjbcqieyXeYgD4EgCpJFl_yWBBDlBCLTSI" // 🔁 Replace this with your real VAPID key from Firebase Console
+      }).then((token) => {
+        console.log("🔔 Notification token:", token);
+        // (Optional) Save token to DB with user info
+      }).catch((err) => {
+        console.error("FCM token error:", err);
+      });
+    } else {
+      console.warn("Notification permission denied.");
+    }
+  });
+}
+
+// 🔐 SIGNUP FUNCTION
 function signup() {
   const name = document.getElementById("name").value;
   const email = document.getElementById("email").value;
@@ -22,11 +43,13 @@ function signup() {
     })
     .then(() => {
       alert("Signup successful!");
+      requestNotificationPermission(); // ✅ Ask for notification after signup
       redirectToDashboard();
     })
     .catch(err => alert("Signup failed: " + err.message));
 }
 
+// 🔐 LOGIN FUNCTION
 function login() {
   const email = document.getElementById("login-email").value;
   const password = document.getElementById("login-password").value;
@@ -42,6 +65,8 @@ function login() {
     })
     .then(snapshot => {
       const role = snapshot.val();
+      requestNotificationPermission(); // ✅ Ask for notification after login
+
       if (role === "doctor") {
         window.location.href = "doctor.html";
       } else if (role === "patient") {
@@ -51,21 +76,28 @@ function login() {
       }
     })
     .catch(error => {
-      // Show a friendly message for common errors
-      if (
-        error.code === "auth/user-not-found" ||
-        error.code === "auth/wrong-password" ||
-        error.code === "auth/invalid-email"
-      ) {
-        alert("Incorrect email or password.");
-      } else {
-        alert("Login failed: " + error.message);
+      let message;
+      switch (error.code) {
+        case "auth/user-not-found":
+        case "auth/wrong-password":
+        case "auth/invalid-email":
+          message = "Incorrect email or password.";
+          break;
+        default:
+          message = "Login failed: " + error.message;
       }
+      alert(message);
     });
 }
 
+// 🔁 LOGOUT FUNCTION (used in doctor/patient.html)
+function logout() {
+  auth.signOut().then(() => {
+    window.location.href = "index.html";
+  });
+}
 
-
+// 🔁 Forgot Password
 function forgotPassword() {
   const email = prompt("Enter your registered email to reset your password:");
   if (!email) return;
@@ -82,5 +114,3 @@ function forgotPassword() {
       }
     });
 }
-
-
